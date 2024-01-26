@@ -2,7 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
-import time
 
 
 def get_soup(n_page: int) -> BeautifulSoup:
@@ -36,19 +35,34 @@ def get_heading(article: BeautifulSoup) -> list[str]:
 
 def dump_heading(headings: list[list]) -> None:
     df = pd.DataFrame(headings, columns=["Heading", "up", "down", "link"])
+    df["text"] = df["link"].apply(get_article_text)
     df["date"] = pd.Timestamp.today().date()
     df.to_csv("headings.csv", mode="a", index=False, header=False)
 
 
-def main():
-    for i in range(4):
-        dump_heading(get_contents(get_soup(i+1)))
-        time.sleep(1)
+def get_article_text(article_link: str) -> str:
+    response = requests.get(article_link)
+    if response.status_code != 200:
+        raise Exception("foobar")
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    return "\n".join(
+        tag_contents.text.replace("&shy", '')
+        .replace(";\xad","")
+        .replace("\xad","")
+        .replace(u"\xa0", " ")
+        for tag_contents in soup.find(
+            "div", {"class": "article-formatted-body"}
+        ).contents)
 
 
-if __name__ == '__main__':
-    main()
+def main(pages: range) -> None:
+    for i in pages:
+        dump_heading(get_contents(get_soup(i + 1)))
+        # time.sleep(1)
+
 
 # while True:
-#     main()
-#     time.sleep(86400)
+main(range(4))
+
+# time.sleep(86400)
