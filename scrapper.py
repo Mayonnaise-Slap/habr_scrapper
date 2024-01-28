@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def get_soup(n_page: int) -> BeautifulSoup:
-    link = fr"https://habr.com/ru/articles/top/daily/page{n_page}/"
+    link = fr"https://habr.com/ru/articles/top/weekly/page{n_page}/"
     r = requests.get(link)
     if r.status_code != 200:
         raise Exception("banned")
@@ -63,6 +63,6 @@ def main(pages: range) -> None:
 
 
 # while True:
-main(range(4))
+main(range(2, 17))
 
 # time.sleep(86400)
