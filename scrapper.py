@@ -23,7 +23,8 @@ def get_contents(soup: BeautifulSoup) -> list[list]:
     """
     Scrapes the primary page
     Args:
-        soup (): soup that is the primary page on url like https://habr.com/top/daily
+        soup (): soup that is the primary
+        page on url like https://habr.com/top/daily
     Returns:
     A list of article titles, their scores and links
     """
@@ -57,8 +58,9 @@ def get_heading(article: BeautifulSoup) -> list[str]:
 
 def get_article_text(article_link: str) -> str:
     """
-    This function takes a link to an article on habr and returns the article in plain text.
-    It does not save pictures or links, only plain text is returned
+    This function takes a link to an article on habr and
+    returns the article in plain text. It does not save
+    pictures or links, only plain text is returned.
     Args:
         article_link (): A link to a habr article
 
@@ -115,7 +117,8 @@ def find_number_of_pages(base_link: str) -> int:
         number of pages that can be parsed
     """
     soup = get_soup(base_link.format(1))
-    n_pages = int(soup.find_all("a", {"class": "tm-pagination__page"})[-1].text)
+    n_pages = int(soup.find_all("a",
+                                {"class": "tm-pagination__page"})[-1].text)
     print(f"Found {n_pages} news pages")
     return n_pages
 
@@ -124,7 +127,7 @@ def main(link_template: str) -> None:
     """
     main method that dumps all news pages and texts to the db
     Args:
-        link_template (str): a template string that .format(int) can be called onto
+        link_template (): a template string that .format() can be called on
     """
     n_pages = find_number_of_pages(link)
 
