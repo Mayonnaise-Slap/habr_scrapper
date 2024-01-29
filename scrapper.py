@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import re
 import datetime
 from db import habr_news, session
+import multiprocessing as mp
 
 
 def get_soup(page_link: str) -> BeautifulSoup:
@@ -15,7 +16,7 @@ def get_soup(page_link: str) -> BeautifulSoup:
     """
     r = requests.get(page_link)
     if r.status_code != 200:
-        raise Exception("Something was wrong with the link")
+        raise Exception(f"Something was wrong with the link {page_link}")
     return BeautifulSoup(r.text, "html.parser")
 
 
@@ -33,7 +34,6 @@ def get_contents(soup: BeautifulSoup) -> list[list]:
         info = get_heading(article)
         info.append(f"https://habr.com{article.find_all("a")[2]["href"]}")
         headings.append(info)
-    print("Processed a page of articles")
     return headings
 
 
@@ -67,7 +67,6 @@ def get_article_text(article_link: str) -> str:
     Returns:
     text (str): The article's plain text
     """
-    print("Getting article text")
     response = requests.get(article_link)
     if response.status_code != 200:
         raise Exception("foobar")
@@ -84,26 +83,34 @@ def get_article_text(article_link: str) -> str:
     )
 
 
-def dump_heading(headings: list[list]) -> None:
+def dump_page(n_page: int) -> None:
     """
     Methods that uploads scraped data to the database
     Args:
-        headings (): list[list] of scraped news. must be in the format
-        [title, upvotes, downvotes, url]
+        n_page: number of the page to be processed
     """
-    with session() as _session:
-        for row in headings:
-            entry = habr_news(
-                title=row[0],
-                upvotes=row[1],
-                downvotes=row[2],
-                url=row[3],
-                text=get_article_text(row[3]),
-                date=datetime.date.today(),
-            )
-            _session.add(entry)
-        _session.commit()
-    print("Finished dumping the page")
+    headings = get_contents(get_soup(link.format(n_page+1)))
+
+    print(f"Scraping {len(headings)} articles")
+    _pool = mp.Pool()
+    _pool.map(dump_row_to_db, headings)
+    _pool.close()
+
+
+def dump_row_to_db(row: list) -> None:
+    _session = session()
+    article_text = get_article_text(row[3])
+    entry = habr_news(
+        title=row[0],
+        upvotes=row[1],
+        downvotes=row[2],
+        url=row[3],
+        text=article_text,
+        date=datetime.date.today(),
+    )
+    _session.add(entry)
+    _session.commit()
+    _session.close()
 
 
 def find_number_of_pages(base_link: str) -> int:
@@ -123,19 +130,17 @@ def find_number_of_pages(base_link: str) -> int:
     return n_pages
 
 
-def main(link_template: str) -> None:
+def main() -> None:
     """
     main method that dumps all news pages and texts to the db
-    Args:
-        link_template (): a template string that .format() can be called on
     """
-    n_pages = find_number_of_pages(link)
+    for n_page in range(find_number_of_pages(link)):
+        dump_page(n_page)
+        print(f"Dumped {n_page} page")
 
-    for i in range(n_pages):
-        print(f"Started processing page {i + 1}")
-        dump_heading(get_contents(get_soup(link_template.format(i + 1))))
+
+link = r"https://habr.com/ru/articles/top/daily/page{}/"
 
 
 if __name__ == "__main__":
-    link = r"https://habr.com/ru/articles/top/weekly/page{}/"
-    main(link)
+    main()
