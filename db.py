@@ -12,7 +12,7 @@ class habr_news(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String)
     url = Column(String)
-    upotes = Column(String)
+    upvotes = Column(String)
     downvotes = Column(String)
     text = Column(String)
     date = Column(String)
