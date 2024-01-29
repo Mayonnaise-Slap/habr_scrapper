@@ -1,14 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
 import re
-import pandas as pd
+import datetime
+from db import habr_news, session
 
 
 def get_soup(n_page: int) -> BeautifulSoup:
     link = fr"https://habr.com/ru/articles/top/weekly/page{n_page}/"
     r = requests.get(link)
     if r.status_code != 200:
-        raise Exception("banned")
+        raise Exception("Something was wrong with the link")
     return BeautifulSoup(r.text, "html.parser")
 
 
@@ -33,13 +34,6 @@ def get_heading(article: BeautifulSoup) -> list[str]:
     return rez
 
 
-def dump_heading(headings: list[list]) -> None:
-    df = pd.DataFrame(headings, columns=["Heading", "up", "down", "link"])
-    df["text"] = df["link"].apply(get_article_text)
-    df["date"] = pd.Timestamp.today().date()
-    df.to_csv("headings.csv", mode="a", index=False, header=False)
-
-
 def get_article_text(article_link: str) -> str:
     response = requests.get(article_link)
     if response.status_code != 200:
@@ -56,13 +50,25 @@ def get_article_text(article_link: str) -> str:
         ).contents)
 
 
+def dump_heading(headings: list[list]) -> None:
+    with session() as _session:
+        for row in headings:
+            entry = habr_news(
+                title=row[0],
+                upotes=row[1],
+                downvotes=row[2],
+                url=row[3],
+                text=get_article_text(row[3]),
+                date=datetime.date.today()
+            )
+            _session.add(entry)
+        _session.commit()
+
+
 def main(pages: range) -> None:
     for i in pages:
         dump_heading(get_contents(get_soup(i + 1)))
-        # time.sleep(1)
 
 
-# while True:
-main(range(2, 17))
-
-# time.sleep(86400)
+if __name__ == "__main__":
+    main(range(1, 13))
