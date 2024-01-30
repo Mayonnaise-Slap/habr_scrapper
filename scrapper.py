@@ -25,7 +25,7 @@ def get_contents(soup: BeautifulSoup) -> list[list]:
     Scrapes the primary page
     Args:
         soup (): soup that is the primary
-        page on url like https://habr.com/top/daily
+        page on url like https://habr.com/top/daily/page{}
     Returns:
     A list of article titles, their scores and links
     """
@@ -83,17 +83,18 @@ def get_article_text(article_link: str) -> str:
     )
 
 
-def dump_page(n_page: int) -> None:
+def dump_page(n_page: int, foo) -> None:
     """
     Methods that uploads scraped data to the database
     Args:
+        foo ():
         n_page: number of the page to be processed
     """
     headings = get_contents(get_soup(link.format(n_page+1)))
 
     print(f"Scraping {len(headings)} articles")
     _pool = mp.Pool()
-    _pool.map(dump_row_to_db, headings)
+    _pool.map(foo, headings)
     _pool.close()
 
 
@@ -130,12 +131,17 @@ def find_number_of_pages(base_link: str) -> int:
     return n_pages
 
 
-def main() -> None:
+def foodump(row: list) -> None:
+    get_article_text(row[3])
+    pass
+
+
+def main(foo) -> None:
     """
     main method that dumps all news pages and texts to the db
     """
     for n_page in range(find_number_of_pages(link)):
-        dump_page(n_page)
+        dump_page(n_page, foo)
         print(f"Dumped {n_page} page")
 
 
@@ -143,4 +149,4 @@ link = r"https://habr.com/ru/articles/top/daily/page{}/"
 
 
 if __name__ == "__main__":
-    main()
+    main(foodump)
