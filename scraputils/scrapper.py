@@ -83,14 +83,14 @@ def get_article_text(article_link: str) -> str:
     )
 
 
-def dump_page(n_page: int, foo) -> None:
+def dump_page(page_link: str, foo) -> None:
     """
     Methods that uploads scraped data to the database
     Args:
-        foo ():
-        n_page: number of the page to be processed
+        foo (): function to dump in parallel
+        page_link: link to the page to be processed
     """
-    headings = get_contents(get_soup(link.format(n_page+1)))
+    headings = get_contents(get_soup(page_link))
 
     print(f"Scraping {len(headings)} articles")
     _pool = mp.Pool()
@@ -98,7 +98,10 @@ def dump_page(n_page: int, foo) -> None:
     _pool.close()
 
 
-def dump_row_to_db(row: list) -> None:
+def db_dump(row: list) -> None:
+    """
+    function to dump scraped data to the sqlite database
+    """
     _session = session()
     article_text = get_article_text(row[3])
     entry = habr_news(
@@ -131,22 +134,27 @@ def find_number_of_pages(base_link: str) -> int:
     return n_pages
 
 
-def foodump(row: list) -> None:
+def foo_dump(row: list) -> None:
+    """
+    placeholder dump method for testing
+    """
     get_article_text(row[3])
     pass
 
 
-def main(foo) -> None:
+def scrape_habr(foo, page_link: str) -> None:
     """
     main method that dumps all news pages and texts to the db
+
+    Args:
+        foo ():
+        page_link: forgettable string of https://habr.com/ru/articles/top{something}/page{}/ to scrape
     """
-    for n_page in range(find_number_of_pages(link)):
-        dump_page(n_page, foo)
-        print(f"Dumped {n_page} page")
-
-
-link = r"https://habr.com/ru/articles/top/daily/page{}/"
+    for n_page in range(find_number_of_pages(page_link)):
+        dump_page(page_link.format(n_page + 1), foo)
+        print(f"Dumped {n_page+1} page")
 
 
 if __name__ == "__main__":
-    main(foodump)
+    link = r"https://habr.com/ru/articles/top/daily/page{}/"
+    scrape_habr(foo_dump, link)
