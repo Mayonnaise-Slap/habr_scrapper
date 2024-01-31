@@ -156,5 +156,5 @@ def scrape_habr(foo, page_link: str) -> None:
 
 
 if __name__ == "__main__":
-    link = r"https://habr.com/ru/articles/top/daily/page{}/"
-    scrape_habr(foo_dump, link)
+    link = r"https://habr.com/ru/articles/top/weekly/page{}/"
+    scrape_habr(db_dump, link)
